@@ -95,10 +95,17 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            target_folder = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
+            os.makedirs(target_folder, exist_ok=True)
+            file_path = os.path.join(target_folder, filename)
+            print("Saving file to:", file_path)  # Add this line for debug
+            file.save(file_path)
+            if os.path.exists(file_path):
+                print("File saved successfully.")  # Add this line for debug
+            else:
+                print("Error: File not found at:", file_path)  # Add this line for debug
             return redirect(url_for('detection_page', filename=filename))
-        
+            
     return render_template('test.html')
 
 @app.route('/detection_page/<filename>')
