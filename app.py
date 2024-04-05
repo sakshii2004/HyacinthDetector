@@ -83,13 +83,10 @@ def allowed_file(filename):
 @app.route('/upload', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        # check if the post request has the file part
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
@@ -98,21 +95,27 @@ def upload_file():
             target_folder = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
             os.makedirs(target_folder, exist_ok=True)
             file_path = os.path.join(target_folder, filename)
-            print("Saving file to:", file_path)  # Add this line for debug
+            print("Saving file to:", file_path)
             file.save(file_path)
             if os.path.exists(file_path):
-                print("File saved successfully.")  # Add this line for debug
+                print("File saved successfully.")
+                return redirect(url_for('detection_page', filename=filename))  # Redirect to detection page
             else:
-                print("Error: File not found at:", file_path)  # Add this line for debug
-            return redirect(url_for('detection_page', filename=filename))
-            
+                flash('Error saving file. Please try again.')
+                return redirect(request.url)  # Redirect back to upload page if file not saved
+
     return render_template('test.html')
+
 
 @app.route('/detection_page/<filename>')
 def detection_page(filename):
-   filepath = ("static/uploads/"+filename)
-   pred = prep_predict(filepath)   
-   return render_template("upload-predict.html", filename=filename, pred = pred, desc = descriptions)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)  # Correct file path
+    if os.path.exists(file_path):  # Check if file exists
+        pred = prep_predict(file_path)   
+        return render_template("upload-predict.html", filename=filename, pred=pred, desc=descriptions)
+    else:
+        flash('Error: File not found.')  # Flash error message if file not found
+        return redirect(url_for('upload_file'))  # Redirect back to upload page
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', debug=True)
